@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Codexus by [OJAS]</title>
+    <title>AI Codex| by [Ojaswow]</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
     <style>
         * {
@@ -471,7 +471,7 @@
                 <div class="logo">
                     <div class="logo-icon">🔮</div>
                     <div>
-                        <div class="title">AI Codex</div>
+                        <div class="title">AI CodeVoid</div>
                         <div class="subtitle">Powered by Advanced AI</div>
                     </div>
                 </div>
@@ -495,7 +495,7 @@
         <!-- Chat Container -->
         <div class="chat-container" id="chatBox">
             <div class="welcome-msg">
-                <h2>Welcome to OjasXcodex AI</h2>
+                <h2>Welcome to AI CodeVoid</h2>
                 <p>Your advanced AI assistant is ready. Ask me anything!</p>
             </div>
         </div>
@@ -520,7 +520,7 @@
 
         <!-- Footer -->
         <div class="footer">
-            🔥 Crafted with 💙 by OJAS | © 2026 AI OjasXcodex
+            🔥 Crafted with 💙 by <a href="#">[Ojaswow777]</a> | © 2026 AI Nexus
         </div>
     </div>
 
@@ -602,6 +602,7 @@
             showTypingIndicator();
             
             try {
+                // FIXED: Use relative URL for deployment
                 const response = await fetch('/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -610,13 +611,36 @@
                 
                 const data = await response.json();
                 
+                // DEBUG: Log the response
+                console.log('API Response:', data);
+                
                 hideTypingIndicator();
                 
-                let botReply = data[0]?.generated_text || "Sorry, I couldn't process that!";
+                // FIXED: Better response parsing
+                let botReply;
                 
-                // Clean up the response (remove user input echo if present)
-                if (botReply.includes(message)) {
-                    botReply = botReply.replace(message, '').trim();
+                if (Array.isArray(data) && data.length > 0) {
+                    // Standard response format
+                    botReply = data[0].generated_text || "Got a response but couldn't parse it!";
+                    
+                    // Clean up: remove user input echo if present
+                    if (botReply.includes(message)) {
+                        botReply = botReply.split(message)[1]?.trim() || botReply;
+                    }
+                } else if (data.error) {
+                    // Error response
+                    botReply = `⚠️ API Error: ${data.error}`;
+                } else if (data.generated_text) {
+                    // Alternative format
+                    botReply = data.generated_text;
+                } else {
+                    // Unknown format
+                    botReply = "🤔 Received an unexpected response format. Try again!";
+                }
+                
+                // If reply is too short or weird, show helpful message
+                if (botReply.length < 2) {
+                    botReply = "I received your message but couldn't generate a proper response. Try asking something else!";
                 }
                 
                 addMessage(botReply, 'bot');
@@ -626,8 +650,9 @@
                 updateCounter();
                 
             } catch (error) {
+                console.error('Fetch error:', error);
                 hideTypingIndicator();
-                addMessage("⚠️ Connection error. Please check if the backend is running!", 'bot');
+                addMessage("⚠️ Connection error! Please try again in a moment.", 'bot');
             }
             
             btn.disabled = false;
@@ -646,8 +671,12 @@
             
             const content = document.createElement('div');
             content.className = 'message-content';
+            
+            // Escape HTML to prevent XSS
+            const safeText = text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            
             content.innerHTML = `
-                <div>${text}</div>
+                <div>${safeText}</div>
                 <div class="timestamp">${getCurrentTime()}</div>
             `;
             
@@ -683,7 +712,6 @@
         }
 
         function showNotification(message) {
-            // Simple alert for now - you can make this fancier!
             alert(message);
         }
 
@@ -693,4 +721,4 @@
         };
     </script>
 </body>
-</html>
+    </html>
