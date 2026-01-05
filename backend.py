@@ -6,7 +6,7 @@ import os
 app = Flask(__name__, static_folder='.')
 CORS(app)
 
-API_URL = "https://api-inference.huggingface.co/models/meta-llama/Llama-3.2-1B-Instruct"
+API_URL = "https://router.huggingface.co/models/meta-llama/Llama-3.2-1B-Instruct"
 API_KEY = os.environ.get('HF_TOKEN', 'YOUR_HF_TOKEN_HERE')  # Use environment variable
 
 @app.route('/')
