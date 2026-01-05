@@ -523,202 +523,80 @@
             🔥 Crafted with 💙 by <a href="#">[Ojaswow]</a> | © 2026 AI Nexus
         </div>
     </div>
+<script>
+const chatBox = document.getElementById("chatBox");
+const input = document.getElementById("userInput");
+const sendBtn = document.getElementById("sendBtn");
 
-    <script>
-        // Message tracking
-        let messageCount = parseInt(localStorage.getItem('msgCount') || '0');
-        let lastReset = localStorage.getItem('lastReset') || new Date().toDateString();
-        
-        // Reset daily
-        if (lastReset !== new Date().toDateString()) {
-            messageCount = 0;
-            localStorage.setItem('msgCount', '0');
-            localStorage.setItem('lastReset', new Date().toDateString());
-        }
-        
-        updateCounter();
+function timeNow() {
+  return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
 
-        // Generate floating particles
-        function createParticles() {
-            const particlesContainer = document.getElementById('particles');
-            for (let i = 0; i < 30; i++) {
-                const particle = document.createElement('div');
-                particle.className = 'particle';
-                particle.style.left = Math.random() * 100 + '%';
-                particle.style.animationDelay = Math.random() * 20 + 's';
-                particle.style.animationDuration = (15 + Math.random() * 10) + 's';
-                particlesContainer.appendChild(particle);
-            }
-        }
-        createParticles();
+function addMessage(text, type) {
+  const msg = document.createElement("div");
+  msg.className = `message ${type}`;
+  msg.innerHTML = `
+    <div class="message-avatar">${type === "bot" ? "🤖" : "👤"}</div>
+    <div class="message-content">
+      ${text}
+      <div class="timestamp">${timeNow()}</div>
+    </div>
+  `;
+  chatBox.appendChild(msg);
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
 
-        function updateCounter() {
-            const remaining = 25 - messageCount;
-            document.getElementById('messageCounter').innerText = `${remaining} messages left`;
-        }
+async function sendMessage() {
+  const text = input.value.trim();
+  if (!text) return;
 
-        function updateCharCount() {
-            const input = document.getElementById('userInput');
-            document.getElementById('charCount').innerText = `${input.value.length}/500`;
-        }
+  addMessage(text, "user");
+  input.value = "";
+  sendBtn.disabled = true;
 
-        function handleKeyPress(event) {
-            if (event.key === 'Enter' && !event.shiftKey) {
-                event.preventDefault();
-                sendMessage();
-            }
-        }
+  addMessage("Typing...", "bot");
 
-        function getCurrentTime() {
-            const now = new Date();
-            return now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-        }
+  try {
+    const res = await fetch("/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: text })
+    });
 
-        async function sendMessage() {
-            const input = document.getElementById('userInput');
-            const message = input.value.trim();
-            
-            if (!message) return;
-            
-            if (messageCount >= 25) {
-                showNotification('⚠️ Daily limit reached! Come back tomorrow!');
-                return;
-            }
-            
-            // Clear welcome message
-            const welcome = document.querySelector('.welcome-msg');
-            if (welcome) welcome.remove();
-            
-            // Add user message
-            addMessage(message, 'user');
-            input.value = '';
-            updateCharCount();
-            
-            // Disable button & show typing
-            const btn = document.getElementById('sendBtn');
-            btn.disabled = true;
-            btn.innerHTML = '⏳';
-            
-            showTypingIndicator();
-            
-            try {
-                // FIXED: Use relative URL for deployment
-                const response = await fetch('/chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: message })
-                });
-                
-                const data = await response.json();
-                
-                // DEBUG: Log the response
-                console.log('API Response:', data);
-                
-                hideTypingIndicator();
-                
-                // FIXED: Better response parsing
-                let botReply;
-                
-                if (Array.isArray(data) && data.length > 0) {
-                    // Standard response format
-                    botReply = data[0].generated_text || "Got a response but couldn't parse it!";
-                    
-                    // Clean up: remove user input echo if present
-                    if (botReply.includes(message)) {
-                        botReply = botReply.split(message)[1]?.trim() || botReply;
-                    }
-                } else if (data.error) {
-                    // Error response
-                    botReply = `⚠️ API Error: ${data.error}`;
-                } else if (data.generated_text) {
-                    // Alternative format
-                    botReply = data.generated_text;
-                } else {
-                    // Unknown format
-                    botReply = "🤔 Received an unexpected response format. Try again!";
-                }
-                
-                // If reply is too short or weird, show helpful message
-                if (botReply.length < 2) {
-                    botReply = "I received your message but couldn't generate a proper response. Try asking something else!";
-                }
-                
-                addMessage(botReply, 'bot');
-                
-                messageCount++;
-                localStorage.setItem('msgCount', messageCount.toString());
-                updateCounter();
-                
-            } catch (error) {
-                console.error('Fetch error:', error);
-                hideTypingIndicator();
-                addMessage("⚠️ Connection error! Please try again in a moment.", 'bot');
-            }
-            
-            btn.disabled = false;
-            btn.innerHTML = '➤';
-        }
+    const data = await res.json();
+    console.log("Backend response:", data);
 
-        function addMessage(text, type) {
-            const chatBox = document.getElementById('chatBox');
-            
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${type}`;
-            
-            const avatar = document.createElement('div');
-            avatar.className = 'message-avatar';
-            avatar.innerHTML = type === 'bot' ? '❄️' : '👤';
-            
-            const content = document.createElement('div');
-            content.className = 'message-content';
-            
-            // Escape HTML to prevent XSS
-            const safeText = text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-            
-            content.innerHTML = `
-                <div>${safeText}</div>
-                <div class="timestamp">${getCurrentTime()}</div>
-            `;
-            
-            messageDiv.appendChild(avatar);
-            messageDiv.appendChild(content);
-            chatBox.appendChild(messageDiv);
-            
-            chatBox.scrollTop = chatBox.scrollHeight;
-        }
+    // remove typing
+    chatBox.lastChild.remove();
 
-        function showTypingIndicator() {
-            const chatBox = document.getElementById('chatBox');
-            const typingDiv = document.createElement('div');
-            typingDiv.className = 'message bot';
-            typingDiv.id = 'typingIndicator';
-            typingDiv.innerHTML = `
-                <div class="message-avatar">🌸</div>
-                <div class="message-content">
-                    <div class="typing-indicator">
-                        <span></span>
-                        <span></span>
-                        <span></span>
-                    </div>
-                </div>
-            `;
-            chatBox.appendChild(typingDiv);
-            chatBox.scrollTop = chatBox.scrollHeight;
-        }
+    let reply = "⚠️ No response from AI";
 
-        function hideTypingIndicator() {
-            const typing = document.getElementById('typingIndicator');
-            if (typing) typing.remove();
-        }
+    // HF Router safe parsing
+    if (Array.isArray(data) && data[0]?.generated_text) {
+      reply = data[0].generated_text;
+    } 
+    else if (data.generated_text) {
+      reply = data.generated_text;
+    } 
+    else if (data.error) {
+      reply = "❌ " + data.error;
+    }
 
-        function showNotification(message) {
-            alert(message);
-        }
+    addMessage(reply, "bot");
 
-        // Auto-focus input on load
-        window.onload = () => {
-            document.getElementById('userInput').focus();
-        };
-    </script>
+  } catch (e) {
+    chatBox.lastChild.remove();
+    addMessage("❌ Server error. Try again later.", "bot");
+  }
+
+  sendBtn.disabled = false;
+}
+
+sendBtn.onclick = sendMessage;
+input.addEventListener("keypress", e => {
+  if (e.key === "Enter") sendMessage();
+});
+</script>
+    
 </body>
     </html>
